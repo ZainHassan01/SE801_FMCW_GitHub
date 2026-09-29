@@ -1,0 +1,8 @@
+﻿numpy
+pandas
+scipy
+scikit-learn
+Pillow
+matplotlib
+torch
+# Optional: umap-learn. The S2 post hoc script falls back to t-SNE.

@@ -1,0 +1,193 @@
+% SE-801 four-track paper. The S1, S3, and S4 sections are reserved for their authors.
+% Overleaf will use IEEEtran; the article fallback permits a local two-column PDF preview.
+\newif\ifieee
+\IfFileExists{IEEEtran.cls}{\ieeetrue\documentclass[conference]{IEEEtran}}{\ieeefalse\documentclass[10pt,twocolumn,letterpaper]{article}}
+\ifieee\else\usepackage[margin=0.7in,columnsep=0.22in]{geometry}\fi
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{balance}
+
+% The three selected S2 plots are packaged as PNGs in figures/.
+% If a teammate compiles the source without them, the absent figures are omitted.
+\newcommand{\optionalfigure}[3]{\IfFileExists{#1}{%
+\begin{figure}[t]\centering\includegraphics[width=0.92\columnwidth]{#1}%
+\caption{#2}\label{#3}\end{figure}}{}}
+\newcommand{\optionalwidefigure}[3]{\IfFileExists{#1}{%
+\begin{figure*}[t]\centering\includegraphics[width=0.77\textwidth]{#1}%
+\caption{#2}\label{#3}\end{figure*}}{}}
+
+\title{Leakage Safe Learning from 77 GHz FMCW Micro Doppler Spectrograms}
+\ifieee
+\author{
+\IEEEauthorblockN{[S1 author], Syed Zain Ul Hassan (S2), [S3 author], [S4 author]}
+\IEEEauthorblockA{College of Aeronautical Engineering, National University of Sciences and Technology, Pakistan\\
+[Affiliations and contact emails to be confirmed by the team]}
+}
+\else
+\author{[S1 author], Syed Zain Ul Hassan (S2), [S3 author], [S4 author]\\
+\small College of Aeronautical Engineering, NUST, Pakistan}
+\fi
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This paper develops a shared evaluation framework for radar target classification from short-dwell 77~GHz FMCW measurements. The available dataset has 75,868 scan segments but only 130 parent measurements; the latter, rather than segments, are the units of independent evaluation. Complex range-compressed measurements are converted to grayscale micro-Doppler spectrograms and split using grouped five-outer by five-inner nested cross-validation. In the evaluated CNN experiment (S2), class-balanced training is compared with a training-only latent-diversity sampler. The latter was selected in all five outer folds. Its mean outer-test parent-level macro-F1 was 0.8985 with a between-fold standard deviation of 0.0887. Pooled predictions on 130 held-out parents yielded macro-F1 of 0.8944; temperature scaling reduced pooled 10-bin expected calibration error from 0.1108 to 0.0754. Image-domain Gaussian noise, contrast reduction, and zero-Doppler masking caused large losses. The physics-guided, temporal, and transformer tracks (S1, S3, and S4) remain to be integrated before any cross-architecture ranking is reported.
+\end{abstract}
+
+\noindent\textbf{Index Terms---}FMCW radar, micro-Doppler, convolutional neural networks, group-aware nested cross-validation, latent-diversity sampling, calibration.
+
+\section{Introduction}
+Micro-Doppler spectrograms encode time-varying target motion as energy distributed over time and Doppler frequency. In the course project, the common scientific question is whether feature-based models, CNNs, temporal networks, and transformers learn useful and reliable distinctions between small aerial and non-aerial radar targets under the same splits and preprocessing \cite{courseprotocol}. Changing the source dataset changes the signal-to-image interface and the target labels; it does not remove the four assigned learning objectives. In particular, S1 retains the verified LLM scientific-reporting experiment.
+
+The revised dataset is especially sensitive to the definition of an independent test example. Each of 130 parent measurements contains many temporally associated scan segments. A random segment split can place descendants of one measurement into both training and test sets, making apparent generalization depend on acquisition-specific structure. We therefore assign complete parent measurements to folds, select methods using only inner folds, and report the outer-fold mean macro-F1 as the primary score.
+
+This manuscript records the evaluated CNN experiment and provides insertion points for S1, S3, and S4. Its current S2 findings are restricted to the evaluated CNN and its two sampling strategies. They do not establish whether CNNs outperform the other three model families, and several additional experiments in the original S2 specification remain outstanding.
+
+\section{Data and Shared Evaluation Protocol}
+\subsection{Measurement Organization and Label Mapping}
+The source file contains an object array with 130 rows and six fields per row. The complex, range-compressed signal for each parent measurement has 1280 values per segment, reshaped into five adjacent range cells and 256 slow-time samples. There are 75,868 segment columns in total. The provided author split indicators are not suitable for measurement-grouped evaluation: all 130 parents cross those indicators in the student audit. Dataset access is documented at the Zenodo record \cite{dataset}.
+
+\begin{table}[t]
+\caption{Four-Class Parent and Segment Distribution}
+\label{tab:dataset}
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Mapped class & Parents & Segments \\
+\midrule
+Drone (D1--D6) & 44 & 58,768 \\
+Bird (all bird labels) & 56 & 7,792 \\
+Human (walk, run) & 11 & 6,028 \\
+Corner reflector & 19 & 3,280 \\
+\midrule
+Total & 130 & 75,868 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All descendants of one parent have the same partition assignment. The 5-by-5 \texttt{StratifiedGroupKFold} construction uses initial seed 2026. For each outer fold, four-fifths of the parents form development data and one-fifth form an untouched test set. Within the development parents, five grouped inner folds determine method selection and the refit epoch. This four-class aggregation supports all five outer and five inner folds; the nine-class formulation does not because several drone labels have only four parents. The smallest mapped class is Human, with 11 parents, so per-fold estimates can vary substantially.
+
+\subsection{Signal to Image Transformation}
+The shared conversion takes slow-time samples 54--203 (150 samples) separately within each of five range cells. A Hann-window STFT uses 64 samples per window, hop two, 256 FFT points, no boundary padding, and a 17~kHz pulse repetition frequency. The temporal frame count is
+\begin{equation}
+T=\left\lfloor\frac{150-64}{2}\right\rfloor+1=44.
+\end{equation}
+After \texttt{fftshift}, the negative Nyquist row is removed, leaving 255 Doppler rows and a central zero-Doppler row. Squared-magnitude spectra are summed over the five range cells. Each image is peak-normalized, log-compressed to the interval $[-60,0]$~dB relative to its own peak, and saved as a lossless grayscale PNG of 255 by 44 pixels (Doppler by time). These pixel values are not calibrated radar power.
+
+At loading time, the common preprocessing removes 5\% from each image border: 13 rows at top and bottom and two columns at left and right. The resulting 229 by 40 array is bilinearly resized to 224 by 224 pixels, scaled to $[0,1]$, then standardized with the active training-partition mean and standard deviation. Inner validation and outer test never contribute to those statistics. Horizontal position is time and vertical position is Doppler frequency. The square resize is required by the inherited image protocol, although it changes the native time-to-Doppler aspect ratio.
+
+\subsection{Metrics and Reporting Unit}
+All segment logits for a test parent are averaged before the parent prediction is taken. Parent-level macro-F1 is calculated across the four labels. We report its mean and sample standard deviation across five outer folds, with a pooled 130-parent out-of-fold score as a secondary view. A class-stratified bootstrap over complete parents, rather than segments, supplies a complementary uncertainty interval. Probability calibration is evaluated on parent-level predictions.
+
+\section{Track Methods}
+\subsection{S1 Physics Guided Features and Verified LLM Reporting}
+\textit{[Reserved for the S1 author. Preserve the ten physics-guided image features, classical baselines, MLP, and verified structured-results-to-LLM reporting experiment. Add implementation, tuning, and measured results here.]}
+
+\subsection{S2 CNN and Latent Diversity}
+The evaluated compact CNN receives one 224 by 224 standardized grayscale channel. Three convolutional layers use 16, 32, and 64 channels. The first has a $5\times5$ kernel and stride two; the next two use $3\times3$ kernels and stride two. Batch normalization follows the first two convolutions; ReLU activations, global average pooling, and a linear four-class head complete the model. The implementation has 23,908 trainable parameters. This is the \emph{implemented} network, not the 32/64/128-channel starting architecture specified in the original protocol.
+
+Both compared strategies use AdamW with learning rate $10^{-3}$, unweighted cross-entropy, batch size 16, and 256 mini-batches per epoch. The inner-fold search permits up to 12 supervised epochs with patience four. The baseline samples classes equally and distinct parent measurements per batch. The diversity method first trains a fixed four-epoch warm-up CNN on the active inner-training partition only (128 batches per epoch), extracts 64-dimensional embeddings of those training segments, and applies deterministic cosine farthest-point selection of up to 32 segments per training parent. A fresh CNN then trains with the same class- and parent-balanced batch structure but draws only from the frozen selected pool. Therefore this experiment compares \emph{class-balanced} versus \emph{class-balanced plus latent diversity}; it is not a comparison against ordinary random mini-batching.
+
+For each outer fold, mean inner-validation parent macro-F1 selects the sampler; strict ties favor the simpler baseline. The final refit trains on all outer-development parents for the rounded median of the selected method's five best inner epochs. Only the refit-training partition supplies its normalization and latent pool. Five inner-validation checkpoints produce out-of-fold parent logits to fit one scalar temperature before the corresponding outer test is opened. Calibration uses the held-out inner parents; neither the sampler nor temperature uses outer-test images or labels.
+
+The predetermined representation-domain stress tests alter a de-standardized image, then restore the training-fold standardization. They comprise Gaussian pixel noise with $\sigma=0.05$ or $0.10$ on the $[0,1]$ scale, a central 20\% time mask, a central 15\% zero-Doppler mask, an eight-pixel Doppler translation, and halved image contrast. These perturbations are \emph{not} physical radar-channel impairments or controlled-SNR measurements.
+
+\subsection{S3 Temporal Models and Next Step Pretraining}
+\textit{[Reserved for the S3 author. Add BiLSTM and temporal CNN models, causal next-column pretraining, temporal-window and temporal-order ablations, and measured results here.]}
+
+\subsection{S4 Vision Transformers and Transfer Learning}
+\textit{[Reserved for the S4 author. Add ViT-Tiny scratch and pretrained initialization, linear probing, partial and full fine-tuning, patch-size ablation, interpretation, and measured results here.]}
+
+\section{Results}
+\subsection{S1 Results}
+\textit{[Reserved for the S1 author, including the mandatory LLM verification results.]}
+
+\subsection{S2 Model Selection and Clean Performance}
+Across the 25 paired inner validations, class-balanced CNNs averaged $0.9147\pm0.0752$ parent macro-F1 and latent-diversity CNNs averaged $0.9519\pm0.0488$. Diversity won 14 comparisons, tied nine, and lost two. Its mean within-parent pairwise cosine similarity was lower by 0.0248 after selection, indicating that the selected training segments occupied a more dispersed region of the warm-up embedding space. The 25 inner folds are correlated within five outer partitions; they are not 25 independent test experiments. The per-outer inner means selected diversity in every outer fold.
+
+\begin{table}[t]
+\caption{Frozen S2 Outer-Fold Refits and Clean Tests}
+\label{tab:outer}
+\centering
+\small
+\begin{tabular}{rrrr}
+\toprule
+Fold & Parents & Epochs & Parent macro-F1 \\
+\midrule
+1 & 27 & 10 & 0.8929 \\
+2 & 26 & 9 & 0.8899 \\
+3 & 25 & 8 & 0.9479 \\
+4 & 26 & 9 & 1.0000 \\
+5 & 26 & 6 & 0.7620 \\
+\midrule
+Mean $\pm$ SD & 130 & -- & $0.8985\pm0.0887$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The primary five-fold clean result is $0.8985\pm0.0887$. Pooling the 130 unique outer-test parent predictions gives macro-F1 $0.8944$; a 10,000-resample class-stratified parent bootstrap yields a 95\% percentile interval $[0.8258,0.9559]$ for this pooled statistic. Fold~5 is substantially weaker than fold~4, consistent with the small number of independent Human parents and potential between-measurement variation. This observation does not by itself establish which acquisition factor causes the difference. Classwise pooled F1 was 0.9024 (Drone), 0.9231 (Bird), 0.8333 (Human), and 0.9189 (corner reflector). Seven of the 44 Drone parents were classified as Bird (Fig.~\ref{fig:confusion}); this is the largest single error type.
+\optionalfigure{figures/figure_4_pooled_confusion_matrix.png}{Pooled clean outer-test confusion matrix for 130 independent parent measurements. Rows are actual classes; columns are predictions.}{fig:confusion}
+
+\subsection{S2 Calibration and Robustness}
+Scalar temperatures fitted on inner out-of-fold logits were 0.369688, 0.497361, 0.280473, 0.682122, and 0.341173 for outer folds 1--5. In their held-out outer tests, pooled 10-bin expected calibration error (ECE) and Brier score improved, but negative log-likelihood worsened after scaling (Table~\ref{tab:calibration}). Calibration benefits therefore depend on the metric. The 15-bin ECE specified in the original course protocol has not yet been calculated.
+
+\begin{table}[t]
+\caption{Pooled Clean Parent-Level Calibration}
+\label{tab:calibration}
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Metric & Raw & Temperature scaled \\
+\midrule
+ECE (10 bins) & 0.1108 & 0.0754 \\
+Brier score & 0.1808 & 0.1560 \\
+Negative log-likelihood & 0.3509 & 0.4330 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\optionalwidefigure{figures/figure_2_robustness_macro_f1.png}{Outer-test parent macro-F1 by corruption (error bars: fold SD, $n=5$).}{fig:robustness}
+From clean F1 of 0.8985, Gaussian pixel noise $\sigma=0.05$ and $0.10$ reduced mean F1 to 0.4962 and 0.3283; halved contrast reduced it to 0.3393 (Fig.~\ref{fig:robustness}). Time masking (0.8659) and an eight-pixel Doppler shift (0.8964) had smaller average effects. Removing the central 15\% Doppler band lowered mean F1 to 0.3992. This test deletes physically meaningful target energy as well as possible background cues; the drop cannot alone prove shortcut learning. The nine exploratory Grad-CAM overlays made for one \emph{inner-fold baseline} checkpoint show attention to the central ridge and, in some examples, left-edge texture. They are diagnostic examples, not an interpretation of the final diversity-refit models.
+
+\subsection{S3 Results}
+\textit{[Reserved for the S3 author.]}
+
+\subsection{S4 Results}
+\textit{[Reserved for the S4 author.]}
+
+\subsection{Four Track Comparison}
+\textit{[Reserved for integration after all tracks use identical manifests, image transforms, metrics, and corruption definitions. Do not rank architectures before these results exist.]}
+
+\section{Discussion}
+\subsection{What the S2 Results Support}
+The grouped evaluation asks whether the CNN transfers between parent measurements, not whether it recognizes new segments from a known measurement. The five-fold result is materially below the stronger inner-validation scores in several folds; this gap is consistent with the harder measurement-level task. The diversity sampler decreased within-parent embedding redundancy and was selected in all five outer folds, but a causal claim that it \emph{improves} outer-test F1 over class-balanced sampling requires an independent baseline outer-test comparison. That counterfactual was not run in the completed S2 experiment.
+
+The robustness pattern and exploratory Grad-CAM examples motivate examination of central-ridge reliance and image-intensity sensitivity. Temperature scaling improved clean pooled ECE and Brier score but worsened clean negative log-likelihood. It also increased mean ECE under several corruptions, including Gaussian noise $\sigma=0.05$ (0.4081 to 0.4569); clean-fitted calibration does not necessarily transfer to altered images. Because the native STFT uses per-image peak normalization followed by quantization, perturbing pixel contrast changes the learned representation but is not equivalent to changing target RCS or radar SNR. The square image resize also changes the native geometry. These limitations should be carried into any physical interpretation.
+
+\subsection{Protocol Gaps and Next Analyses}
+The S2 package presently covers the compact CNN, paired class-balanced versus latent-diversity sampling, grouped nested evaluation, exploratory embedding redundancy, calibration, and six image-domain stress conditions. It does not yet establish the original S2 requirements for MobileNet and fine-tuning, a true random-sampling arm, approved augmentation and ablations, UMAP or t-SNE, five correct plus five incorrect final-model Grad-CAM examples, confident-error analysis, or compute and latency benchmarks \cite{courseprotocol}. The implemented model and training controls also differ from the suggested architecture and common training settings: batch 16, patience four, a shared seed 2026 across outer refits, and no recorded gradient-norm or peak-memory results. ECE uses ten instead of fifteen bins, and the applied corruptions do not match the protocol's SNR/blur grid. These are explicit deviations requiring technical reconciliation or supervisor approval; the current manuscript must not be called a fully completed S2 protocol evaluation.
+
+Outer-test sets have already been evaluated once. Further model or corruption choices made after reading these outcomes would use the same tests for selection and invalidate an unbiased comparison. Any expanded formal study should either document the existing scores as exploratory and evaluate the revised protocol on fresh independent measurements, or obtain an approved new test design before claiming a confirmatory result.
+
+\section{Conclusion}
+Using complete parent measurements as split groups, the evaluated S2 latent-diversity CNN achieved $0.8985\pm0.0887$ mean outer-fold parent macro-F1 on four mapped target classes. Calibration improved 10-bin ECE but worsened negative log-likelihood. Image noise, contrast loss, and zero-Doppler masking reduced F1 substantially. Cross-track conclusions and full protocol-compliance claims remain pending S1, S3, S4, and a review of the S2 gaps.
+
+\begin{thebibliography}{9}
+\bibitem{dataset} ``77 GHz FMCW radar target dataset,'' Zenodo, record 5845259. [Online]. Available: \url{https://zenodo.org/records/5845259}. [Complete author, title, version and DOI fields from the dataset README before submission.]
+\bibitem{courseprotocol} ``SE-801 Artificial Neural Networks (Deep Learning) Term Project - Spring 2026,'' course protocol, National University of Sciences and Technology, 2026.
+\bibitem{gradcam} R. R. Selvaraju \emph{et al.}, ``Grad-CAM: Visual Explanations from Deep Networks via Gradient-Based Localization,'' in \emph{Proc. IEEE Int. Conf. Computer Vision}, 2017.
+\bibitem{calibration} C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger, ``On Calibration of Modern Neural Networks,'' in \emph{Proc. Int. Conf. Machine Learning}, 2017.
+\end{thebibliography}
+
+\end{document}

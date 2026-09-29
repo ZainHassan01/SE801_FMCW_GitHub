@@ -1,0 +1,200 @@
+{
+  "protocol": {
+    "outer_folds": 5,
+    "inner_folds": 5,
+    "seed": 2026,
+    "independent_unit": "parent measurement",
+    "parents": 130,
+    "selected_strategy": "latent diversity in all five outer folds",
+    "outer_test_scored_once_per_fold": true,
+    "post_test_model_updates": false
+  },
+  "primary_nested_cv_result": {
+    "metric": "outer-fold parent-level macro-F1",
+    "fold_values": [
+      0.8928571428571428,
+      0.8898809523809524,
+      0.9479166666666666,
+      1.0,
+      0.7619949494949495
+    ],
+    "mean": 0.8985299422799423,
+    "standard_deviation": 0.088718672067559
+  },
+  "pooled_out_of_fold_clean_result": {
+    "parent_macro_f1": 0.8944420499298549,
+    "per_class_parent_f1": [
+      0.9024390243902439,
+      0.9230769230769231,
+      0.8333333333333334,
+      0.918918918918919
+    ],
+    "confusion_matrix": [
+      [
+        37,
+        7,
+        0,
+        0
+      ],
+      [
+        1,
+        54,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        10,
+        1
+      ],
+      [
+        0,
+        0,
+        2,
+        17
+      ]
+    ],
+    "raw_calibration": {
+      "ece_10_bin": 0.11077936899999997,
+      "brier": 0.18080752087097032,
+      "nll": 0.3508569371657726
+    },
+    "temperature_scaled_calibration": {
+      "ece_10_bin": 0.07540437976923077,
+      "brier": 0.15598125012485292,
+      "nll": 0.4329898212457694
+    },
+    "parent_bootstrap_95_percent_interval": {
+      "method": "class-stratified bootstrap of complete parent measurements",
+      "resamples": 10000,
+      "seed": 2026,
+      "lower_95_percentile": 0.8257780171362483,
+      "upper_95_percentile": 0.9558819992269857,
+      "bootstrap_standard_error": 0.03288038570844418
+    }
+  },
+  "robustness": [
+    {
+      "condition": "clean",
+      "fold_mean_parent_macro_f1": 0.8985299422799423,
+      "fold_std_parent_macro_f1": 0.088718672067559,
+      "minimum_fold_parent_macro_f1": 0.7619949494949495,
+      "maximum_fold_parent_macro_f1": 1.0,
+      "mean_delta_from_clean": 0.0,
+      "mean_raw_ece_10_bin": 0.16225237931926706,
+      "mean_calibrated_ece_10_bin": 0.1048067892297381,
+      "mean_raw_brier": 0.18070349151137063,
+      "mean_calibrated_brier": 0.15547838045680704,
+      "mean_raw_nll": 0.35078678727149964,
+      "mean_calibrated_nll": 0.4324040710926056
+    },
+    {
+      "condition": "gaussian_noise_0.05",
+      "fold_mean_parent_macro_f1": 0.4962300881049491,
+      "fold_std_parent_macro_f1": 0.1346406867098397,
+      "minimum_fold_parent_macro_f1": 0.3326612903225806,
+      "maximum_fold_parent_macro_f1": 0.6677777777777778,
+      "mean_delta_from_clean": -0.40229985417499314,
+      "mean_raw_ece_10_bin": 0.4081180503748761,
+      "mean_calibrated_ece_10_bin": 0.45688180027931835,
+      "mean_raw_brier": 0.8064884284540581,
+      "mean_calibrated_brier": 0.8946754649786058,
+      "mean_raw_nll": 2.2279035806655885,
+      "mean_calibrated_nll": 5.728275394439697
+    },
+    {
+      "condition": "gaussian_noise_0.10",
+      "fold_mean_parent_macro_f1": 0.32830645161290317,
+      "fold_std_parent_macro_f1": 0.045494865570608195,
+      "minimum_fold_parent_macro_f1": 0.28348214285714285,
+      "maximum_fold_parent_macro_f1": 0.390625,
+      "mean_delta_from_clean": -0.5702234906670391,
+      "mean_raw_ece_10_bin": 0.5597496016059506,
+      "mean_calibrated_ece_10_bin": 0.5604938846863913,
+      "mean_raw_brier": 1.114738232063192,
+      "mean_calibrated_brier": 1.1152421107531978,
+      "mean_raw_nll": 12.880631065368652,
+      "mean_calibrated_nll": 14.862596702575683
+    },
+    {
+      "condition": "time_mask_20pct",
+      "fold_mean_parent_macro_f1": 0.8658846270688377,
+      "fold_std_parent_macro_f1": 0.08251689942103325,
+      "minimum_fold_parent_macro_f1": 0.7619949494949495,
+      "maximum_fold_parent_macro_f1": 0.9511278195488722,
+      "mean_delta_from_clean": -0.0326453152111047,
+      "mean_raw_ece_10_bin": 0.16360658298122918,
+      "mean_calibrated_ece_10_bin": 0.1220234740948745,
+      "mean_raw_brier": 0.20910361925450022,
+      "mean_calibrated_brier": 0.19032014434766725,
+      "mean_raw_nll": 0.40191333293914794,
+      "mean_calibrated_nll": 0.463716858625412
+    },
+    {
+      "condition": "zero_doppler_mask_15pct",
+      "fold_mean_parent_macro_f1": 0.39917144012308226,
+      "fold_std_parent_macro_f1": 0.2029416535745745,
+      "minimum_fold_parent_macro_f1": 0.12903225806451613,
+      "maximum_fold_parent_macro_f1": 0.614766081871345,
+      "mean_delta_from_clean": -0.49935850215686006,
+      "mean_raw_ece_10_bin": 0.2776172999113034,
+      "mean_calibrated_ece_10_bin": 0.38676436739158093,
+      "mean_raw_brier": 0.5885088938341684,
+      "mean_calibrated_brier": 0.7444341606147432,
+      "mean_raw_nll": 0.9194736480712891,
+      "mean_calibrated_nll": 1.6169486045837402
+    },
+    {
+      "condition": "doppler_shift_8px",
+      "fold_mean_parent_macro_f1": 0.8963515797068429,
+      "fold_std_parent_macro_f1": 0.09260994618883431,
+      "minimum_fold_parent_macro_f1": 0.7619949494949495,
+      "maximum_fold_parent_macro_f1": 1.0,
+      "mean_delta_from_clean": -0.002178362573099402,
+      "mean_raw_ece_10_bin": 0.14430964021227638,
+      "mean_calibrated_ece_10_bin": 0.11240525539851938,
+      "mean_raw_brier": 0.18709924271570827,
+      "mean_calibrated_brier": 0.16778236369383173,
+      "mean_raw_nll": 0.35220385193824766,
+      "mean_calibrated_nll": 0.3888644903898239
+    },
+    {
+      "condition": "contrast_half",
+      "fold_mean_parent_macro_f1": 0.3392535392535393,
+      "fold_std_parent_macro_f1": 0.15404510956552328,
+      "minimum_fold_parent_macro_f1": 0.14864864864864866,
+      "maximum_fold_parent_macro_f1": 0.5547619047619047,
+      "mean_delta_from_clean": -0.559276403026403,
+      "mean_raw_ece_10_bin": 0.30783741484578175,
+      "mean_calibrated_ece_10_bin": 0.39112361358577374,
+      "mean_raw_brier": 0.6064462162179244,
+      "mean_calibrated_brier": 0.7739967835193533,
+      "mean_raw_nll": 0.9457216382026672,
+      "mean_calibrated_nll": 1.748019766807556
+    }
+  ],
+  "source_hashes": {
+    "1": {
+      "results_sha256": "23b5c694969cb7102712d68d68ff46c3ceb2437d434e51857dabff42b5a61f21",
+      "predictions_sha256": "b910efe1a96eb40711c51c36945c26d9ce98889a21a5b0f5fd0028d99ce2f618"
+    },
+    "2": {
+      "results_sha256": "650eae03d1ecc98de51a5b87a6a451aae2886625a347f05214cc54ec6b457c07",
+      "predictions_sha256": "b0e6458dde2876bb5b0365afce1b7c11086c05252a8a64f71c6f080b9e36c5f6"
+    },
+    "3": {
+      "results_sha256": "f53aaedf7e9706a12f0b99fd7dc780c5c22278d4953d2f18f94a449cb586bce4",
+      "predictions_sha256": "36b89d8a00ab5be1f306d9169bbfcb8742e52ef16e17955046fa282eee793b6e"
+    },
+    "4": {
+      "results_sha256": "c807da9166fb3c4de122c5e68c1db8408620f9f8b68145f1a627b0b2935c28d1",
+      "predictions_sha256": "9bdf98f36c95e84b5e9695e371d0496d627ef5bf8ab899f312604b3d6364d4fe"
+    },
+    "5": {
+      "results_sha256": "d91a98f0b0c4d67a6d675fd8b43b39779a11c7999a04146cd0de031c2e2c33f0",
+      "predictions_sha256": "a6a724e874faf972502b0b4cad2c1f786841bb3db957905f06389e81506c4373"
+    }
+  },
+  "interpretation_note": "The fold mean and standard deviation are the primary nested-CV estimate. The pooled 130-parent score and stratified parent bootstrap interval are complementary summaries."
+}
