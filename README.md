@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿# SE-801 FMCW project
 
 This repository contains code for the four-class, parent-grouped radar
